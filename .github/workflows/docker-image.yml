@@ -43,12 +43,27 @@ jobs:
         if: steps.scan.outputs.found_keys != ''
         run: |
           echo "Removing AWS keys from the code..."
-          
-          # Regex pattern to find AWS Access Keys in code
+
+          # Define the pattern for AWS Access Keys
           key_pattern='AKIA[A-Z0-9]\{16\}'
 
-          # Find and replace keys with a placeholder in all files
-          find . -type f -exec sed -i 's/'"$key_pattern"'/REDACTED_ACCESS_KEY/g' {} \;
+          # Apply sed to all files to replace the AWS keys with a placeholder
+          # We're using `-e` for expression, and ensuring files are processed correctly
+          find . -type f -exec sed -i -e 's/'"$key_pattern"'/REDACTED_ACCESS_KEY/g' {} \;
 
-          # Check if any file was modified
-          git diff --exit-c
+          # Print out the changes for debugging
+          echo "Changes made in the following files:"
+          git diff --name-only
+
+          # Check if any files were modified
+          git diff --exit-code || echo "Files modified. Preparing to commit changes."
+
+          # Stage and commit changes
+          git add .
+          git commit -m "Removed AWS Access Keys from the code"
+
+      # Push changes if AWS keys were removed
+      - name: Push changes
+        if: steps.scan.outputs.found_keys != ''
+        run: |
+          git push origin HEAD
