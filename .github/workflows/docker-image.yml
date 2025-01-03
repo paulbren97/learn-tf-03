@@ -21,22 +21,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Install dependencies
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq
-
       # Scan for AWS Access Keys in the code
       - name: Scan for AWS Access Keys
         id: scan
         run: |
           echo "Scanning for AWS keys..."
-          
-          # Search for AWS Access Keys (the pattern typically starts with 'AKIA')
-          found_keys=$(grep -r -o "AKIA[A-Z0-9]\{16\}" .)
 
-          if [ -z "$found_keys" ]; then
+          # Search for AWS Access Keys (the pattern typically starts with 'AKIA')
+          # Using grep without -P flag to avoid compatibility issues
+          found_keys=$(grep -r -o "AKIA[A-Z0-9]\{16\}" . || echo "No AWS keys found")
+
+          if [[ "$found_keys" == "No AWS keys found" ]]; then
             echo "No AWS keys found."
           else
             echo "AWS keys found: $found_keys"
@@ -52,4 +47,8 @@ jobs:
           # Regex pattern to find AWS Access Keys in code
           key_pattern='AKIA[A-Z0-9]\{16\}'
 
-          # Find and replace 
+          # Find and replace keys with a placeholder in all files
+          find . -type f -exec sed -i 's/'"$key_pattern"'/REDACTED_ACCESS_KEY/g' {} \;
+
+          # Check if any file was modified
+          git diff --exit-c
