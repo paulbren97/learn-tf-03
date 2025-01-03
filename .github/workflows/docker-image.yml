@@ -1,0 +1,42 @@
+name: Remove AWS Access Keys from Code
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/*'
+      - 'bugfix/*'
+  pull_request:
+    branches:
+      - main
+      - 'feature/*'
+      - 'bugfix/*'
+
+jobs:
+  scan-and-remove-keys:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      # Scan for AWS Access Keys in the code
+      - name: Scan for AWS Access Keys
+        id: scan
+        run: |
+          echo "Scanning for AWS keys..."
+          # Search for AWS Access Keys (the pattern typically starts with 'AKIA')
+          found_keys=$(grep -r -o -P "(?<=AKIA)[A-Z0-9]{16}" .)
+
+          if [ -z "$found_keys" ]; then
+            echo "No AWS keys found."
+          else
+            echo "AWS keys found: $found_keys"
+            echo
