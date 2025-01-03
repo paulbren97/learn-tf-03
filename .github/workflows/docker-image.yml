@@ -45,6 +45,10 @@ jobs:
         if: env.found_keys == '1'
         run: |
           echo "Removing AWS keys from the code..."
+
+          # Set user.name and user.email for git commits
+          git config --global user.name "paulbren97"
+          git config --global user.email "paulbren@amazon.com"
           
           # Regex pattern to find AWS Access Keys in code
           key_pattern='AKIA[A-Z0-9]\{16\}'
