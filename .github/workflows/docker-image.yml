@@ -21,49 +21,42 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Scan for AWS Access Keys in the code
+      # Scan for AWS Access Keys
       - name: Scan for AWS Access Keys
         id: scan
         run: |
           echo "Scanning for AWS keys..."
-
+          
           # Search for AWS Access Keys (the pattern typically starts with 'AKIA')
           # Using grep without -P flag to avoid compatibility issues
           found_keys=$(grep -r -o "AKIA[A-Z0-9]\{16\}" . || echo "No AWS keys found")
 
           if [[ "$found_keys" == "No AWS keys found" ]]; then
             echo "No AWS keys found."
+            echo "found_keys=0" >> $GITHUB_ENV
           else
             echo "AWS keys found: $found_keys"
             echo "$found_keys" > found_keys.txt
+            echo "found_keys=1" >> $GITHUB_ENV
           fi
 
-      # Remove AWS Access Keys from the code
+      # Remove AWS Access Keys from code (only if keys are found)
       - name: Remove AWS Access Keys from code
-        if: steps.scan.outputs.found_keys != ''
+        if: env.found_keys == '1'
         run: |
           echo "Removing AWS keys from the code..."
-
-          # Define the pattern for AWS Access Keys
+          
+          # Regex pattern to find AWS Access Keys in code
           key_pattern='AKIA[A-Z0-9]\{16\}'
+          
+          # Find and replace keys with a placeholder in all files
+          find . -type f -exec sed -i 's/'"$key_pattern"'/REDACTED_ACCESS_KEY/g' {} \;
 
-          # Apply sed to all files to replace the AWS keys with a placeholder
-          # We're using `-e` for expression, and ensuring files are processed correctly
-          find . -type f -exec sed -i -e 's/'"$key_pattern"'/REDACTED_ACCESS_KEY/g' {} \;
-
-          # Print out the changes for debugging
-          echo "Changes made in the following files:"
-          git diff --name-only
-
-          # Check if any files were modified
-          git diff --exit-code || echo "Files modified. Preparing to commit changes."
-
-          # Stage and commit changes
+          # Add the changes to git
           git add .
-          git commit -m "Removed AWS Access Keys from the code"
 
-      # Push changes if AWS keys were removed
-      - name: Push changes
-        if: steps.scan.outputs.found_keys != ''
-        run: |
-          git push origin HEAD
+          # Commit the changes
+          git commit -m "Removed AWS access keys"
+          
+          # Push the changes
+          git push origin main
