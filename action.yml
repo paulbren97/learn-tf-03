@@ -1,0 +1,10 @@
+name: 'AWS Credentials Check'
+description: 'Checks for AWS access keys in files and suggests moving them to secrets'
+inputs:
+  files:
+    description: 'Files to check (glob pattern)'
+    required: true
+    default: '**/*.{py,js,json,yaml,yml}'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
