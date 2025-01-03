@@ -32,11 +32,24 @@ jobs:
         id: scan
         run: |
           echo "Scanning for AWS keys..."
+          
           # Search for AWS Access Keys (the pattern typically starts with 'AKIA')
-          found_keys=$(grep -r -o -P "(?<=AKIA)[A-Z0-9]{16}" .)
+          found_keys=$(grep -r -o "AKIA[A-Z0-9]\{16\}" .)
 
           if [ -z "$found_keys" ]; then
             echo "No AWS keys found."
           else
             echo "AWS keys found: $found_keys"
-            echo
+            echo "$found_keys" > found_keys.txt
+          fi
+
+      # Remove AWS Access Keys from the code
+      - name: Remove AWS Access Keys from code
+        if: steps.scan.outputs.found_keys != ''
+        run: |
+          echo "Removing AWS keys from the code..."
+          
+          # Regex pattern to find AWS Access Keys in code
+          key_pattern='AKIA[A-Z0-9]\{16\}'
+
+          # Find and replace 
